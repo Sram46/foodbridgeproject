@@ -3,41 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Location Finder with Country & State</title>
+  <title>Location Finder with Manual Entry</title>
   <style>
     body {
       font-family: Arial, sans-serif;
+      background: #f9f9f9;
       padding: 20px;
-      background: #f5f5f5;
+      max-width: 600px;
+      margin: auto;
     }
-    h2 {
+    h2, h3 {
       text-align: center;
     }
-    button {
-      padding: 10px 20px;
-      background: #28a745;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
+    .section {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    button:hover {
-      background: #218838;
-    }
-    input, textarea, select {
+    select, input[type="text"], textarea, button {
       width: 100%;
       padding: 10px;
-      margin: 8px 0;
+      margin: 8px 0 15px;
       border: 1px solid #ccc;
       border-radius: 6px;
+      font-size: 16px;
+      box-sizing: border-box;
     }
-    iframe {
-      width: 100%;
-      height: 300px;
+    button {
+      background-color: #28a745;
+      color: white;
       border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    #location {
+      font-size: 16px;
       margin-top: 15px;
-      border-radius: 6px;
     }
     a {
       color: #007bff;
@@ -46,113 +52,198 @@
     a:hover {
       text-decoration: underline;
     }
-    .section {
-      margin: 20px 0;
-      background: white;
-      padding: 15px;
+    iframe {
+      width: 100%;
+      height: 300px;
+      border: none;
       border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
 
-  <h2>📍 Find and Share Your Location</h2>
+  <h2>📍 Location Finder</h2>
 
   <div class="section">
-    <button onclick="getLocation()">Auto Detect My Location</button>
-    <p id="location">Your location will appear here.</p>
+    <button onclick="getLocation()">Show My Location</button>
+    <p id="location">Your location will appear here after clicking the button.</p>
     <div id="map-container"></div>
   </div>
 
   <div class="section">
-    <h3>📝 Or Enter Location Manually</h3>
+    <h3>Manual Location Entry</h3>
 
+    <label for="country">Country</label>
     <select id="country" onchange="handleCountryChange()">
       <option value="">Select Country</option>
     </select>
 
-    <div id="stateContainer">
-      <input type="text" id="state" placeholder="State" />
-    </div>
+    <div id="stateContainer"></div>
+    <div id="cityContainer"></div>
 
-    <input type="text" id="city" placeholder="City" />
-    <input type="text" id="zipcode" placeholder="Pincode / Zip Code" />
-    <textarea id="landmark" rows="3" placeholder="Nearby landmarks..."></textarea>
+    <label for="zipcode">Pincode / Zip Code</label>
+    <input type="text" id="zipcode" placeholder="Enter Pincode or Zip Code" />
+
+    <label for="landmark">Nearby Landmarks</label>
+    <textarea id="landmark" rows="3" placeholder="Describe nearby landmarks"></textarea>
   </div>
 
   <script>
+    // Countries list - add more if you want or use a bigger list
     const countries = [
-      "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia",
-      "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium",
-      "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria",
-      "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad",
-      "Chile", "China", "Colombia", "Comoros", "Congo (Congo-Brazzaville)", "Costa Rica", "Croatia", "Cuba", "Cyprus",
-      "Czech Republic", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "DR Congo", "Ecuador", "Egypt",
-      "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France",
-      "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau",
-      "Guyana", "Haiti", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel",
-      "Italy", "Ivory Coast", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan",
-      "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
-      "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius",
-      "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar",
-      "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea",
-      "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay",
-      "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis",
-      "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia",
-      "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands",
-      "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden",
-      "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga",
-      "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates",
-      "United Kingdom", "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam",
-      "Yemen", "Zambia", "Zimbabwe"
+      "Afghanistan","Albania","Algeria","Andorra","Angola","Antigua and Barbuda",
+      "Argentina","Armenia","Australia","Austria","Azerbaijan","Bahamas","Bahrain",
+      "Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bhutan","Bolivia",
+      "Bosnia and Herzegovina","Botswana","Brazil","Brunei","Bulgaria","Burkina Faso",
+      "Burundi","Cambodia","Cameroon","Canada","Cape Verde","Central African Republic",
+      "Chad","Chile","China","Colombia","Comoros","Congo (Brazzaville)","Congo (Kinshasa)",
+      "Costa Rica","Croatia","Cuba","Cyprus","Czech Republic","Denmark","Djibouti",
+      "Dominica","Dominican Republic","East Timor (Timor-Leste)","Ecuador","Egypt",
+      "El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia",
+      "Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana","Greece",
+      "Grenada","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras",
+      "Hungary","Iceland","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy",
+      "Jamaica","Japan","Jordan","Kazakhstan","Kenya","Kiribati","Korea, North",
+      "Korea, South","Kuwait","Kyrgyzstan","Laos","Latvia","Lebanon","Lesotho",
+      "Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Madagascar",
+      "Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands","Mauritania",
+      "Mauritius","Mexico","Micronesia","Moldova","Monaco","Mongolia","Montenegro",
+      "Morocco","Mozambique","Myanmar (Burma)","Namibia","Nauru","Nepal","Netherlands",
+      "New Zealand","Nicaragua","Niger","Nigeria","North Macedonia","Norway","Oman",
+      "Pakistan","Palau","Panama","Papua New Guinea","Paraguay","Peru","Philippines",
+      "Poland","Portugal","Qatar","Romania","Russia","Rwanda","Saint Kitts and Nevis",
+      "Saint Lucia","Saint Vincent and the Grenadines","Samoa","San Marino",
+      "Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles",
+      "Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia",
+      "South Africa","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland",
+      "Syria","Taiwan","Tajikistan","Tanzania","Thailand","Togo","Tonga","Trinidad and Tobago",
+      "Tunisia","Turkey","Turkmenistan","Tuvalu","Uganda","Ukraine","United Arab Emirates",
+      "United Kingdom","United States","Uruguay","Uzbekistan","Vanuatu","Vatican City",
+      "Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"
     ];
 
+    // Indian states
     const indianStates = [
       "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
       "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
-      "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
-      "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana",
-      "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands",
-      "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir",
-      "Ladakh", "Lakshadweep", "Puducherry"
+      "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya",
+      "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim",
+      "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand",
+      "West Bengal", "Delhi"
     ];
+
+    // Cities for specific states
+    const stateCityMap = {
+"Tamil Nadu": [
+  "Ariyalur","Chengalpattu","Chennai","Coimbatore","Cuddalore",
+  "Dharmapuri","Dindigul","Erode","Kallakurichi","Kancheepuram",
+  "Karur","Krishnagiri","Madurai","Mayiladuthurai","Nagapattinam",
+  "Namakkal","Nilgiris","Perambalur","Pudukkottai","Ramanathapuram",
+  "Ranipet","Salem","Sivaganga","Tenkasi","Thanjavur",
+  "Theni","Thiruvallur","Thiruvarur","Tuticorin (Thoothukudi)","Tiruchirappalli",
+  "Tirunelveli","Tirupathur","Tiruppur","Tiruvannamalai","Vellore",
+  "Viluppuram","Virudhunagar"
+],
+"Kerala": [
+  "Alappuzha","Ernakulam","Idukki","Kannur","Kasaragod",
+  "Kollam","Kottayam","Kozhikode","Malappuram","Palakkad",
+  "Pathanamthitta","Thiruvananthapuram","Thrissur","Wayanad"
+],
+"Andhra Pradesh": [
+  "Anantapur","Chittoor","East Godavari","Guntur","Kadapa (YSR Kadapa)",
+  "Kakinada","Kurnool","Nellore","Prakasam","Srikakulam",
+  "Sri Potti Sriramulu Nellore","Visakhapatnam","Vizianagaram","West Godavari",
+  "Eluru","Kovvur","Rajahmundry","Tirupati","Amalapuram",
+  "Bhimavaram","Gudivada","Machilipatnam","Narasapuram","Nidadavolu",
+  "Palakollu","Tanuku"
+]
+    };
 
     const countrySelect = document.getElementById("country");
     const stateContainer = document.getElementById("stateContainer");
+    const cityContainer = document.getElementById("cityContainer");
 
+    // Populate countries dropdown
     countries.forEach(country => {
-      const option = document.createElement("option");
-      option.value = country;
-      option.textContent = country;
-      countrySelect.appendChild(option);
+      const opt = document.createElement("option");
+      opt.value = country;
+      opt.textContent = country;
+      countrySelect.appendChild(opt);
     });
 
     function handleCountryChange() {
       const selectedCountry = countrySelect.value;
+      stateContainer.innerHTML = "";
+      cityContainer.innerHTML = "";
+
       if (selectedCountry === "India") {
+        // Show states dropdown
         const stateSelect = document.createElement("select");
         stateSelect.id = "state";
         stateSelect.innerHTML = '<option value="">Select State</option>';
         indianStates.forEach(state => {
-          const option = document.createElement("option");
-          option.value = state;
-          option.textContent = state;
-          stateSelect.appendChild(option);
+          const opt = document.createElement("option");
+          opt.value = state;
+          opt.textContent = state;
+          stateSelect.appendChild(opt);
         });
+        stateSelect.onchange = handleStateChange;
         stateContainer.innerHTML = "";
+        stateContainer.appendChild(createLabel("state", "State"));
         stateContainer.appendChild(stateSelect);
-      } else {
-        stateContainer.innerHTML = '<input type="text" id="state" placeholder="State" />';
+
+        // city input default
+        cityContainer.appendChild(createLabel("city", "City"));
+        cityContainer.innerHTML += '<input type="text" id="city" placeholder="Enter City" />';
+      } else if (selectedCountry !== "") {
+        // For other countries, show simple text inputs for state and city
+        stateContainer.innerHTML = "";
+        cityContainer.innerHTML = "";
+
+        stateContainer.appendChild(createLabel("state", "State"));
+        stateContainer.innerHTML += '<input type="text" id="state" placeholder="Enter State" />';
+
+        cityContainer.appendChild(createLabel("city", "City"));
+        cityContainer.innerHTML += '<input type="text" id="city" placeholder="Enter City" />';
       }
+    }
+
+    function handleStateChange() {
+      const selectedState = document.getElementById("state").value;
+      cityContainer.innerHTML = "";
+      cityContainer.appendChild(createLabel("city", "City"));
+
+      if (stateCityMap[selectedState]) {
+        const citySelect = document.createElement("select");
+        citySelect.id = "city";
+        citySelect.innerHTML = '<option value="">Select City</option>';
+        stateCityMap[selectedState].forEach(city => {
+          const opt = document.createElement("option");
+          opt.value = city;
+          opt.textContent = city;
+          citySelect.appendChild(opt);
+        });
+        cityContainer.appendChild(citySelect);
+      } else {
+        cityContainer.innerHTML += '<input type="text" id="city" placeholder="Enter City" />';
+      }
+    }
+
+    function createLabel(forId, text) {
+      const label = document.createElement("label");
+      label.setAttribute("for", forId);
+      label.textContent = text;
+      return label;
     }
 
     function getLocation() {
       const locationP = document.getElementById("location");
       const mapContainer = document.getElementById("map-container");
+      mapContainer.innerHTML = "";
 
       if (navigator.geolocation) {
-        locationP.innerText = "Fetching location...";
+        locationP.textContent = "Fetching location...";
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const lat = position.coords.latitude;
@@ -161,26 +252,26 @@
             const embedURL = `https://www.google.com/maps?q=${lat},${lon}&output=embed`;
 
             locationP.innerHTML = `
-              Latitude: <strong>${lat}</strong><br>
-              Longitude: <strong>${lon}</strong><br>
-              <a href="${mapsURL}" target="_blank">🔗 Open in Google Maps</a>
+              Latitude: <strong>${lat.toFixed(6)}</strong><br>
+              Longitude: <strong>${lon.toFixed(6)}</strong><br>
+              <a href="${mapsURL}" target="_blank" rel="noopener noreferrer">🔗 Open in Google Maps</a>
             `;
 
             mapContainer.innerHTML = `<iframe src="${embedURL}" allowfullscreen></iframe>`;
           },
           (error) => {
-            locationP.innerText = "Error: " + error.message;
-            mapContainer.innerHTML = "";
+            locationP.textContent = "Error getting location: " + error.message;
           },
           {
-            enableHighAccuracy: true
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
           }
         );
       } else {
-        locationP.innerText = "Geolocation not supported by your browser.";
+        locationP.textContent = "Geolocation is not supported by your browser.";
       }
     }
   </script>
-
 </body>
 </html>
